@@ -4,8 +4,14 @@ library(tidyverse)
 dis<-us_contagious_diseases
 murder<-murders
 
-disease_example <- disease %>%
-  filter(disease == "Measles" & state == 'Florida')
+
+dis2 <- transform(dis,
+                  state = state.abb[match(as.character(state), state.name)],
+                  fillKey = cut(count, unique(quantile(count, seq(0, 1, 1/5))), labels = LETTERS[1:4])
+)
+disease_example <- dis2%>%
+  filter(disease == "Measles") %>%
+  select(c("state", "year", "count", "fillKey"))
 
 p <- plot_ly(x = ~disease_example$year, y = ~disease_example$count, type = 'scatter',
              frame = ~frame)
@@ -116,3 +122,33 @@ p3<- d3 %>%
   animation_button(
     x = 1, xanchor = "right", y = 0, yanchor = "bottom", color = 'white'
   )
+
+fills = setNames(
+  c(RColorBrewer::brewer.pal(5, 'YlOrRd'), 'white'),
+  c(LETTERS[1:4], 'defaultFill')
+)
+
+disease_ex2 <- dlply(na.omit(disease_example), "year", function(x){
+  y = toJSONArray2(x, json = F)
+  names(y) = lapply(y, '[[', 'state')
+  return(y)
+})
+
+options(rcharts.cdn = TRUE)
+map <- Datamaps$new()
+map$set(
+  dom = 'chart_1',
+  scope = 'usa',
+  fills = fills,
+  data = disease_ex2[[1]],
+  legend = TRUE,
+  labels = TRUE
+)
+map
+
+source('ichoropleth.R')
+ichoropleth(count ~ state,
+            data = disease_example,
+            ncuts = 5,
+            animate = 'year'
+)
