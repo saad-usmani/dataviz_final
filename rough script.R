@@ -10,7 +10,7 @@ dis2 <- transform(dis,
 )
 kable(head(datm2), format = 'html', table.attr = "class=nofluid")
 
-disease_example <- disease %>%
+disease_example <- dis %>%
   filter(disease == "Measles" & state == 'Florida')
 
 disease_2 <- disease %>%
@@ -34,21 +34,17 @@ d <-  disease_example%>%
 p2<- d %>%
   plot_ly(
     x = ~year, 
-    y = ~count, 
-    split = ~disease,
+    y = ~count,
     frame = ~frame, 
     text = ~paste('Count: ', count), 
     color = 'orange',
     hoverinfo = "text",
     type = 'scatter',
-    mode = 'lines',
-    showLegend = FALSE,
-    frame.plot=FALSE,
-    bty = 'n'
+    mode = 'lines'
   ) %>%
   layout(
     title = paste(unique(d$disease), 'count over time in', unique(d$state)),
-    font = list(color = 'white', size = 12, font = ''),
+    font = list(color = 'white', size = 12),
     xaxis = list(
       type = "-",
       title = 'Year',
@@ -74,6 +70,8 @@ p2<- d %>%
   animation_button(
     x = 1, xanchor = "right", y = 0, yanchor = "bottom", color = 'white'
   )
+
+p2
 
 dis_sum <- dis %>%
   group_by(disease, year) %>%
