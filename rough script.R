@@ -28,14 +28,18 @@ p2<- d %>%
     y = ~count, 
     split = ~disease,
     frame = ~frame, 
-    text = ~state, 
-    color = 'red',
+    text = ~paste('Count: ', count), 
+    color = 'orange',
     hoverinfo = "text",
     type = 'scatter',
     mode = 'lines',
-    showLegend = FALSE
+    showLegend = FALSE,
+    frame.plot=FALSE,
+    bty = 'n'
   ) %>%
   layout(
+    title = paste(unique(d$disease), 'count over time in', unique(d$state)),
+    font = list(color = 'white', size = 12, font = ''),
     xaxis = list(
       type = "-",
       title = 'Year',
@@ -59,5 +63,7 @@ p2<- d %>%
     hide = T
   ) %>%
   animation_button(
-    x = 1, xanchor = "right", y = 0, yanchor = "bottom"
+    x = 1, xanchor = "right", y = 0, yanchor = "bottom", color = 'white'
   )
+
+
