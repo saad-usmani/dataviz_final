@@ -4,14 +4,17 @@ library(tidyverse)
 dis<-us_contagious_diseases
 murder<-murders
 
-
 dis2 <- transform(dis,
-                  state = state.abb[match(as.character(state), state.name)],
-                  fillKey = cut(count, unique(quantile(count, seq(0, 1, 1/5))), labels = LETTERS[1:4])
+                   state = state.abb[match(as.character(state), state.name)],
+                   fillKey = cut(count, unique(quantile(count, seq(0, 1, 1/5)), labels = LETTERS[1:5]))
 )
-disease_example <- dis2%>%
-  filter(disease == "Measles") %>%
-  select(c("state", "year", "count", "fillKey"))
+kable(head(datm2), format = 'html', table.attr = "class=nofluid")
+
+disease_example <- disease %>%
+  filter(disease == "Measles" & state == 'Florida')
+
+disease_2 <- disease %>%
+  filter(disease == "Measles")
 
 p <- plot_ly(x = ~disease_example$year, y = ~disease_example$count, type = 'scatter',
              frame = ~frame)
@@ -127,13 +130,11 @@ fills = setNames(
   c(RColorBrewer::brewer.pal(5, 'YlOrRd'), 'white'),
   c(LETTERS[1:4], 'defaultFill')
 )
-
 disease_ex2 <- dlply(na.omit(disease_example), "year", function(x){
   y = toJSONArray2(x, json = F)
   names(y) = lapply(y, '[[', 'state')
   return(y)
 })
-
 options(rcharts.cdn = TRUE)
 map <- Datamaps$new()
 map$set(
@@ -149,6 +150,8 @@ map
 source('ichoropleth.R')
 ichoropleth(count ~ state,
             data = disease_example,
+            pal = 'Blues',
             ncuts = 5,
-            animate = 'year'
+            animate = 'year',
+            play = F
 )
