@@ -4,6 +4,10 @@ library(shinythemes)
 library(data.table)
 library(dslabs)
 library(tidyverse)
+library(geojsonio)
+library(downloader)
+library(leaflet)
+library(maptools)
 
 dis<-us_contagious_diseases
 dis_name<-us_contagious_diseases
