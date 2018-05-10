@@ -54,7 +54,7 @@ ui<-fluidPage(
 
 server<- function(input, output){
   output$year<-renderUI({
-    data4 <- reactive({dis_name[dis_name$disease == isolate(input$disease),]})
+    data4 <- reactive({dis_name[dis_name$disease ==input$disease,]})
     data5 <- reactive({min(data4()$year)})
     data6 <- reactive({max(data4()$year)})
     sliderInput("year", "Year:", min = data5(), max = data6(), value = 1980)
