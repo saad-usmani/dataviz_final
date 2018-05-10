@@ -42,6 +42,18 @@ ui<-fluidPage(
                         plotlyOutput("time"), width = 10
                       )
              ),
+             tabPanel("Overall Count",
+                      sidebarPanel(
+                        tags$div(
+                          tags$p("An overall trend from all states of the disease chosen from the previous tab")),
+                        tags$head(tags$style("#time{height:100vh !important;}")),
+                        actionButton("goButton", "Go!"), 
+                        width = 2
+                      ),
+                      mainPanel(
+                        plotlyOutput("overall"), width = 10
+                      )
+             ),
              tabPanel("US Level",
                      sidebarLayout(
                       sidebarPanel(
@@ -110,6 +122,62 @@ server<- function(input, output){
       )
     p2
   })
+  
+  output$overall <- renderPlotly({
+    dis_sum <- dis %>%
+      group_by(disease, year) %>%
+      summarise(total = sum(count)) %>%
+      filter(disease == input$disease) %>%
+      data.frame()
+    
+    
+    d3<-dis_sum%>%
+      accumulate_by(~year)
+    
+    
+    p3<- d3 %>%
+      plot_ly(
+        x = ~year, 
+        y = ~total,
+        frame = ~frame, 
+        text = ~paste('Count: ', total), 
+        color = 'orange',
+        hoverinfo = "text",
+        type = 'scatter',
+        mode = 'lines'
+      ) %>%
+      layout(
+        title = paste(unique(dis_sum$disease), 'overall count over time'),
+        font = list(color = 'white', size = 12, font = ''),
+        xaxis = list(
+          type = "-",
+          title = 'Year',
+          color = 'white'
+        ),
+        yaxis = list(
+          type = "-",
+          title = 'Count',
+          color = 'white'
+        ),
+        paper_bgcolor = 'black',
+        plot_bgcolor = 'black'
+      )%>%
+      animation_opts(
+        easing = 'elastic',
+        frame = 75, 
+        transition = 50, 
+        redraw = FALSE
+      ) %>%
+      animation_slider(
+        hide = T
+      ) %>%
+      animation_button(
+        x = 1, xanchor = "right", y = 0, yanchor = "bottom", color = 'white'
+      )
+    p3
+    
+  })
+  
   output$map <- renderLeaflet({
     input$go2
     data3 <- reactive({dis_name[dis_name$disease == input$disease & dis_name$year == input$year,]})

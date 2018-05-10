@@ -85,7 +85,7 @@ p2<- d %>%
 dis_sum <- dis %>%
   group_by(disease, year) %>%
   summarise(total = sum(count)) %>%
-  filter(disease == 'Measles') %>%
+  filter(disease == 'Hepatitis A') %>%
   data.frame()
 
 
