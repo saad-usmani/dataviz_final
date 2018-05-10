@@ -182,7 +182,7 @@ m <- leaflet(states) %>%
   addProviderTiles("Stamen.Watercolor") #FUN
 
 # what do we have so far
-bins <- c(quantile(na.omit(states$count), seq(0, 1, 1/5)))
+bins <- c(0,300,900,1200,1500,1800,2100,2400,2700,Inf)
 pal <- colorBin("YlOrRd", domain = states$count, bins = bins)
 labels <- sprintf(
   "<strong>%s</strong><br/>",

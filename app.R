@@ -6,6 +6,9 @@ library(dslabs)
 library(tidyverse)
 
 dis<-us_contagious_diseases
+dis_name<-us_contagious_diseases
+colnames(dis_name)[2]<-"NAME"
+bins <- c(0,300,900,1200,1500,1800,2100,2400,2700,Inf)
 
 accumulate_by <- function(dat, var) {
   var <- lazyeval::f_eval(var, dat)
@@ -23,10 +26,10 @@ ui<-fluidPage(
              tabPanel("State Level",
                       sidebarPanel(
                         tags$div(
-                          tags$p("Choose a state and a disease and see how the number of people with that disease changes over time.")),
+                          tags$p("Choose a disease and a state combo and see how the number of people with that disease changes over time.")),
                         tags$head(tags$style("#time{height:100vh !important;}")),
-                        selectInput(inputId = "state", label = "State", as.list(unique(dis$state))),
                         selectInput(inputId = "disease", label = "Disease", as.list(unique(dis$disease))),
+                        selectInput(inputId = "state", label = "State", as.list(unique(dis$state))),
                         #textInput(inputId = "name", label = "Name of Storm", "Name")
                         actionButton("goButton", "Go!"), 
                         width = 2
@@ -39,16 +42,24 @@ ui<-fluidPage(
                      sidebarLayout(
                       sidebarPanel(
              tags$div(
-               tags$p("Pick a disease and look at how the trends change over time in the US.")),
+               tags$p("Using the disease from the previous tab, pick a year and look at how the trends change over time in the US. Note: You might see an error because this choropleth map takes a bit longer to load, so press Go!, play around with the slider, be patient, and have fun!")),
              tags$head(tags$style("#map{height:100vh !important;}")),
-             sliderInput("year", "Year", min = 1929, max = 2005, value = 1929)),
-                     mainPanel(leafletOutput("map"), width = 10)))
+             uiOutput('year'),
+             actionButton("go2", "Go!")),
+                     mainPanel(leafletOutput("map"), width = 8)))
              
   )
 )
 
 
 server<- function(input, output){
+  output$year<-renderUI({
+    data4 <- reactive({dis_name[dis_name$disease == isolate(input$disease),]})
+    data5 <- reactive({min(data4()$year)})
+    data6 <- reactive({max(data4()$year)})
+    sliderInput("year", "Year:", min = data5(), max = data6(), value = 1980)
+  })
+  
   output$time<-renderPlotly({
     input$goButton
     data1<-reactive({dis[dis$disease == isolate(input$disease) & dis$state == isolate(input$state),]})
@@ -96,6 +107,7 @@ server<- function(input, output){
     p2
   })
   output$map <- renderLeaflet({
+    input$go2
     data3 <- reactive({dis_name[dis_name$disease == input$disease & dis_name$year == input$year,]})
     disease_example<-data3()[,c("NAME", "count")]
     states <- geojsonio::geojson_read("us-states.geojson", what= "sp")
@@ -106,10 +118,9 @@ server<- function(input, output){
       
       # set what the background map should look like.
       #addTiles() # basic
-      addProviderTiles("Stamen.Watercolor") #FUN
+      addProviderTiles("CartoDB.DarkMatter") #FUN
     
     # what do we have so far
-    bins <- c(quantile(na.omit(states$count), seq(0, 1, 1/5)))
     pal <- colorBin("YlOrRd", domain = states$count, bins = bins)
     labels <- sprintf(
       "<strong>%s</strong><br/>",
