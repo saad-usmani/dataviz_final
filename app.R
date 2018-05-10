@@ -46,7 +46,7 @@ ui<-fluidPage(
                       sidebarPanel(
                         tags$div(
                           tags$p("An overall trend from all states of the disease chosen from the previous tab")),
-                        tags$head(tags$style("#time{height:100vh !important;}")),
+                        tags$head(tags$style("#overall{height:100vh !important;}")),
                         actionButton("goButton", "Go!"), 
                         width = 2
                       ),
