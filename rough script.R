@@ -7,27 +7,25 @@ library(geojsonio)
 library(downloader)
 library(leaflet)
 library(maptools)
+
+#Importing the dataset
 dis<-us_contagious_diseases
+
 dis_name<-us_contagious_diseases
 colnames(dis_name)[2]<-"NAME"
-murder<-murders
 
-dis2 <- transform(dis,
-                   state = state.abb[match(as.character(state), state.name)],
-                   fillKey = cut(count, unique(quantile(count, seq(0, 1, 1/5)), labels = LETTERS[1:5]))
-)
-kable(head(datm2), format = 'html', table.attr = "class=nofluid")
-
-disease_example <- dis_name %>%
-  filter(disease == "Measles" & year == '1928') %>%
-  select(NAME, count)
-
-disease_2 <- dis2 %>%
-  filter(disease == "Measles")
+#Attempting to create first time series plot with plotly
 
 p <- plot_ly(x = ~disease_example$year, y = ~disease_example$count, type = 'scatter',
              frame = ~frame)
 
+#Creating animated time series by state and disease
+
+disease_example <- dis %>%
+  filter(disease == "Measles" & state == 'Florida')
+
+
+#Creating function to get lines in animation (taken from Plotly website)
 accumulate_by <- function(dat, var) {
   var <- lazyeval::f_eval(var, dat)
   lvls <- plotly:::getLevels(var)
@@ -80,8 +78,10 @@ p2<- d %>%
     x = 1, xanchor = "right", y = 0, yanchor = "bottom", color = 'white'
   )
 
-p2
 
+
+#Attempting to create summary of time series by year and disease animation but
+#ultimately failed doing this
 dis_sum <- dis %>%
   group_by(disease, year) %>%
   summarise(total = sum(count)) %>%
@@ -91,7 +91,7 @@ dis_sum <- dis %>%
 
 d3<-dis_sum%>%
   accumulate_by(~year)
-  
+
 
 p3<- d3 %>%
   plot_ly(
@@ -133,15 +133,34 @@ p3<- d3 %>%
     x = 1, xanchor = "right", y = 0, yanchor = "bottom", color = 'white'
   )
 
+#First attempt at choropleth using javascript and datamap from Github
+
+#Had to first transform the data
+
+dis2 <- transform(dis,
+                   state = state.abb[match(as.character(state), state.name)],
+                   fillKey = cut(count, unique(quantile(count, seq(0, 1, 1/5)), labels = LETTERS[1:5]))
+)
+
+disease_2 <- dis2 %>%
+  filter(disease == "Measles")
+
+#Get fills
+
 fills = setNames(
   c(RColorBrewer::brewer.pal(5, 'YlOrRd'), 'white'),
   c(LETTERS[1:4], 'defaultFill')
 )
+
+#Create JSON arrays
+
 disease_ex2 <- dlply(na.omit(dis2), "year", function(x){
   y = toJSONArray2(x, json = F)
   names(y) = lapply(y, '[[', 'state')
   return(y)
 })
+
+# Create map
 options(rcharts.cdn = TRUE)
 map <- Datamaps$new()
 map$set(
@@ -154,6 +173,11 @@ map$set(
 )
 map
 
+#Primitive example worked
+
+#Tried ichoropleth and it works in Rstudio but I didn't realize 
+#that it is not compatible with Shiny so I wasted many hours on this
+
 source('ichoropleth.R')
 ichoropleth(count ~ state,
             data = disease_2,
@@ -163,6 +187,12 @@ ichoropleth(count ~ state,
             play = F
 )
 
+#Now attempting to use choropleth from Leaflet - most of this taken from
+#our lab I worked on
+
+disease_example <- dis_name %>%
+  filter(disease == "Measles" & year == '1928') %>%
+  select(NAME, count)
 
 u <- "eric.clst.org/assets/wiki/uploads/Stuff/gz_2010_us_040_00_500k.json"
 #downloader::download(url = u, destfile="us-states.geojson")
@@ -216,3 +246,5 @@ m %>%
     opacity = 0.7, 
     title="Counts of Disease", 
     position = "bottomright")
+
+#Yay, it works. 
