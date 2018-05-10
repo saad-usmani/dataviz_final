@@ -1,7 +1,15 @@
 library(dslabs)
 library(plotly)
 library(tidyverse)
+library(install.load)
+library(dplyr)
+library(geojsonio)
+library(downloader)
+library(leaflet)
+library(maptools)
 dis<-us_contagious_diseases
+dis_name<-us_contagious_diseases
+colnames(dis_name)[2]<-"NAME"
 murder<-murders
 
 dis2 <- transform(dis,
@@ -10,10 +18,11 @@ dis2 <- transform(dis,
 )
 kable(head(datm2), format = 'html', table.attr = "class=nofluid")
 
-disease_example <- dis %>%
-  filter(disease == "Measles" & state == 'Florida')
+disease_example <- dis_name %>%
+  filter(disease == "Measles" & year == '1928') %>%
+  select(NAME, count)
 
-disease_2 <- disease %>%
+disease_2 <- dis2 %>%
   filter(disease == "Measles")
 
 p <- plot_ly(x = ~disease_example$year, y = ~disease_example$count, type = 'scatter',
@@ -128,7 +137,7 @@ fills = setNames(
   c(RColorBrewer::brewer.pal(5, 'YlOrRd'), 'white'),
   c(LETTERS[1:4], 'defaultFill')
 )
-disease_ex2 <- dlply(na.omit(disease_example), "year", function(x){
+disease_ex2 <- dlply(na.omit(dis2), "year", function(x){
   y = toJSONArray2(x, json = F)
   names(y) = lapply(y, '[[', 'state')
   return(y)
@@ -147,9 +156,63 @@ map
 
 source('ichoropleth.R')
 ichoropleth(count ~ state,
-            data = disease_example,
+            data = disease_2,
             pal = 'Blues',
             ncuts = 5,
             animate = 'year',
             play = F
 )
+
+
+u <- "eric.clst.org/assets/wiki/uploads/Stuff/gz_2010_us_040_00_500k.json"
+#downloader::download(url = u, destfile="us-states.geojson")
+
+# use geojsonio to load the spatial data into sp objects
+disease_example <- dis_name %>%
+  filter(disease == "Measles" & year == '1980') %>%
+  select(NAME, count)
+states <- geojsonio::geojson_read("us-states.geojson", what= "sp")
+states@data<-states@data[c(-17),]
+states@data <- merge(states@data, disease_example, by = 'NAME', sort = FALSE)
+m <- leaflet(states) %>%
+  setView(-96, 37.8, 4) %>% # set the view to the contiguous United States
+  
+  # set what the background map should look like.
+  #addTiles() # basic
+  addProviderTiles("Stamen.Watercolor") #FUN
+
+# what do we have so far
+bins <- c(quantile(na.omit(states$count), seq(0, 1, 1/5)))
+pal <- colorBin("YlOrRd", domain = states$count, bins = bins)
+labels <- sprintf(
+  "<strong>%s</strong><br/>",
+  states$count
+) %>% lapply(htmltools::HTML)
+m %>% 
+  addPolygons(
+    fillColor = ~pal(states$count),
+    weight = 2,
+    opacity = 1,
+    color = "white",
+    dashArray = "3",
+    fillOpacity = 0.7,
+    highlight = highlightOptions(
+      weight = 5,
+      color = "#666",
+      dashArray = "",
+      fillOpacity = 0.7,
+      bringToFront = TRUE
+    ),
+    label = labels,
+    labelOptions = labelOptions(
+      style = list("font-weight" = "normal", padding = "3px 8px"),
+      testsize = "15px",
+      direction = "auto"
+    )
+  ) %>% 
+  addLegend(
+    pal = pal, 
+    values = ~states$count,
+    opacity = 0.7, 
+    title="Counts of Disease", 
+    position = "bottomright")
